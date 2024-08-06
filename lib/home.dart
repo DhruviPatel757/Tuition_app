@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'add_user_page.dart';
+import 'login.dart';
+import 'fees.dart';
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
@@ -13,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _messageController = TextEditingController();
   List<String> messages = [];
   String? selectedClass;
-  final List<String> classes = ['All','5th', '6th', '7th', '8th', '9th', '10th'];
+  final List<String> classes = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
 
   void _addMessage() {
     String message = _messageController.text.trim();
@@ -30,6 +33,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _logout() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,11 +47,28 @@ class _HomePageState extends State<HomePage> {
         title: Text('Home Page'),
         backgroundColor: Colors.blueAccent,
         actions: [
+          if (widget.isAdmin)
+            IconButton(
+              icon: Icon(Icons.person_add),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddUserPage()),
+                );
+              },
+            ),
+          IconButton(
+            icon: Icon(Icons.money),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FeesPage(isAdmin: widget.isAdmin)),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: _logout,
           ),
         ],
       ),

@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      ' Login',
+                      'Login',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                     ElevatedButton(
                       onPressed: _login,
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.blueAccent,
+                        backgroundColor: Colors.blueAccent,
                         padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
