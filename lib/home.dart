@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 import 'add_user_page.dart';
 import 'login.dart';
 import 'fees.dart';
@@ -17,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<String> messages = [];
   String? selectedClass;
   final List<String> classes = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
+  File? _selectedFile;
 
   void _addMessage() {
     String message = _messageController.text.trim();
@@ -38,6 +45,70 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
+  }
+
+  Future<void> _uploadFile() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedFile = File(pickedFile.path);
+      });
+
+      try {
+        // Create a reference to the storage bucket
+        final storageRef = FirebaseStorage.instance.ref().child('uploads/${DateTime.now().millisecondsSinceEpoch}_${_selectedFile!.path.split('/').last}');
+
+        // Upload the file
+        await storageRef.putFile(_selectedFile!);
+
+        // Get the download URL
+        String downloadUrl = await storageRef.getDownloadURL();
+
+        // Save the file reference in Firestore
+        await FirebaseFirestore.instance.collection('uploads').add({
+          'fileUrl': downloadUrl,
+          'uploadedAt': Timestamp.now(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File uploaded successfully!')),
+        );
+
+        setState(() {
+          _selectedFile = null; // Clear the selected file
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload file: $e')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No file selected.')),
+      );
+    }
+  }
+
+  Future<void> _downloadFile(String fileUrl) async {
+    try {
+      // Get the file name from the URL
+      final fileName = fileUrl.split('/').last;
+
+      // Get the temporary directory for storing the downloaded file
+      final directory = await getTemporaryDirectory();
+      final localPath = '${directory.path}/$fileName';
+
+      // Download the file from Firebase Storage
+      await FirebaseStorage.instance.refFromURL(fileUrl).writeToFile(File(localPath));
+
+      // Open the downloaded file
+      await OpenFile.open(localPath);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to download file: $e')),
+      );
+    }
   }
 
   @override
@@ -79,24 +150,67 @@ class _HomePageState extends State<HomePage> {
           children: [
             Expanded(
               child: ListView.builder(
-                itemCount: messages.length,
+                itemCount: messages.length + 1,
                 itemBuilder: (context, index) {
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(
-                        messages[index],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  if (index < messages.length) {
+                    return Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text(
+                          messages[index],
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  );
+                    );
+                  } else {
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance.collection('uploads').snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final uploads = snapshot.data!.docs;
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: uploads.length,
+                            itemBuilder: (context, uploadIndex) {
+                              final upload = uploads[uploadIndex];
+                              final fileUrl = upload['fileUrl'] as String;
+                              return Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    _downloadFile(fileUrl);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Text(
+                                      'Downloaded file: ${fileUrl.split('/').last}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                      },
+                    );
+                  }
                 },
               ),
             ),
@@ -136,6 +250,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _uploadFile,
+                child: Text('Upload File'),
+              ),
+              if (_selectedFile != null) ...[
+                SizedBox(height: 16),
+                Text('Selected file: ${_selectedFile!.path.split('/').last}'),
+              ],
             ],
           ],
         ),
