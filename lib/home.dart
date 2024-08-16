@@ -56,16 +56,12 @@ class _HomePageState extends State<HomePage> {
       });
 
       try {
-        // Create a reference to the storage bucket
         final storageRef = FirebaseStorage.instance.ref().child('uploads/${DateTime.now().millisecondsSinceEpoch}_${_selectedFile!.path.split('/').last}');
 
-        // Upload the file
         await storageRef.putFile(_selectedFile!);
 
-        // Get the download URL
         String downloadUrl = await storageRef.getDownloadURL();
 
-        // Save the file reference in Firestore
         await FirebaseFirestore.instance.collection('uploads').add({
           'fileUrl': downloadUrl,
           'uploadedAt': Timestamp.now(),
@@ -76,7 +72,7 @@ class _HomePageState extends State<HomePage> {
         );
 
         setState(() {
-          _selectedFile = null; // Clear the selected file
+          _selectedFile = null;
         });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,17 +88,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _downloadFile(String fileUrl) async {
     try {
-      // Get the file name from the URL
       final fileName = fileUrl.split('/').last;
 
-      // Get the temporary directory for storing the downloaded file
       final directory = await getTemporaryDirectory();
       final localPath = '${directory.path}/$fileName';
 
-      // Download the file from Firebase Storage
       await FirebaseStorage.instance.refFromURL(fileUrl).writeToFile(File(localPath));
 
-      // Open the downloaded file
       await OpenFile.open(localPath);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
