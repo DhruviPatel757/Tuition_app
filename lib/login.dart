@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -10,19 +12,26 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
+  void _login() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
 
-    if (username == 'admin' && password == 'admin123') {
+    final response = await http.post(
+      Uri.parse('http://192.168.249.15:5000/login'),//192.168.11.15
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage(isAdmin: true)),
-      );
-    } else if (username == 'user' && password == 'user123') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage(isAdmin: false)),
+        MaterialPageRoute(builder: (context) => HomePage(isAdmin: data['isAdmin'])),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
