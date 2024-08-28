@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'login.dart';
+import 'add_user_page.dart';
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
@@ -23,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   String? selectedGroup = 'All';
   final List<String> groups = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
   File? _selectedFile;
-  List<dynamic> tasks = [];
+  List tasks = [];
 
   @override
   void initState() {
@@ -31,9 +32,9 @@ class _HomePageState extends State<HomePage> {
     _fetchTasks();
   }
 
-  Future<void> _fetchTasks() async {
+  Future _fetchTasks() async {
     final response = await http.get(
-      Uri.parse('http://192.168.249.15:5000/tasks?group=$selectedGroup'),//192.168.11.15:5000
+      Uri.parse('http://192.168.249.15:5000/tasks?group=$selectedGroup'),
     );
 
     if (response.statusCode == 200) {
@@ -47,16 +48,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _addTask() async {
+  Future _addTask() async {
     String title = _taskTitleController.text.trim();
-
     if (title.isNotEmpty) {
       final response = await http.post(
         Uri.parse('http://192.168.249.15:5000/addTask'),
-        headers: <String, String>{
+        headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode(<String, dynamic>{
+        body: jsonEncode({
           'title': title,
           'assignedTo': 'defaultUser',
           'group': selectedGroup!,
@@ -81,23 +81,27 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _uploadFile() async {
+  Future _uploadFile() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         _selectedFile = File(pickedFile.path);
       });
+
       try {
         final storageRef = FirebaseStorage.instance.ref().child('uploads/${DateTime.now().millisecondsSinceEpoch}_${_selectedFile!.path.split('/').last}');
         await storageRef.putFile(_selectedFile!);
         String downloadUrl = await storageRef.getDownloadURL();
         await FirebaseFirestore.instance.collection('uploads').add({
           'fileUrl': downloadUrl,
+          'fileName': _selectedFile!.path.split('/').last,
           'uploadedAt': Timestamp.now(),
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File uploaded successfully!')),
         );
+
         setState(() {
           _selectedFile = null;
         });
@@ -113,11 +117,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _downloadFile(String fileUrl) async {
+  Future _downloadFile(String fileUrl) async {
     try {
       final fileName = fileUrl.split('/').last;
       final directory = await getTemporaryDirectory();
       final localPath = '${directory.path}/$fileName';
+
       await FirebaseStorage.instance.refFromURL(fileUrl).writeToFile(File(localPath));
       await OpenFile.open(localPath);
     } catch (e) {
@@ -133,6 +138,12 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
+  void _navigateToAddUserPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddUserPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,9 +155,7 @@ class _HomePageState extends State<HomePage> {
           if (widget.isAdmin)
             IconButton(
               icon: Icon(Icons.person_add),
-              onPressed: () {
-
-              },
+              onPressed: _navigateToAddUserPage,
             ),
           IconButton(
             icon: Icon(Icons.logout),
@@ -159,42 +168,54 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Text(
+              'Uploaded Files',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
             Expanded(
-              flex: 2,
               child: StreamBuilder(
                 stream: FirebaseFirestore.instance.collection('uploads').snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     final uploads = snapshot.data!.docs;
-                    return ListView.builder(
+                    return ListView.separated(
                       itemCount: uploads.length,
+                      separatorBuilder: (context, index) => SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final upload = uploads[index];
                         final fileUrl = upload['fileUrl'] as String;
-                        return Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              _downloadFile(fileUrl);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Downloaded file: ${fileUrl.split('/').last}',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                        final fileName = upload['fileName'] as String;
+                        return GestureDetector(
+                          onTap: () {
+                            _downloadFile(fileUrl);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    fileName,
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  Icon(Icons.download, color: Colors.blue),
-                                ],
-                              ),
+                                ),
+                                Icon(Icons.download, color: Colors.blue),
+                              ],
                             ),
                           ),
                         );
@@ -206,34 +227,46 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
+            SizedBox(height: 16),
+            Text(
+              'Tasks',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
             Expanded(
-              flex: 2,
-              child: ListView.builder(
+              child: ListView.separated(
                 itemCount: tasks.length,
+                separatorBuilder: (context, index) => SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final task = tasks[index];
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  return Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(
-                        task['title'],
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                    child: Text(
+                      task['title'],
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   );
                 },
               ),
             ),
             SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField(
               value: selectedGroup,
               hint: Text('Select Group'),
               items: groups.map((group) {
-                return DropdownMenuItem<String>(
+                return DropdownMenuItem(
                   value: group,
                   child: Text(group),
                 );
