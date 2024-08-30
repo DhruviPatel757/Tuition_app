@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'login.dart';
 import 'add_user_page.dart';
+import 'fees.dart'; // Import FeesPage
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
@@ -23,11 +24,15 @@ class _HomePageState extends State<HomePage> {
   String? selectedGroup = 'All';
   final List<String> groups = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
   List tasks = [];
+  List users = []; // List to store users
 
   @override
   void initState() {
     super.initState();
     _fetchTasks();
+    if (widget.isAdmin) {
+      _fetchUsers(); // Fetch users if admin
+    }
   }
 
   Future _fetchTasks() async {
@@ -42,6 +47,22 @@ class _HomePageState extends State<HomePage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching tasks')),
+      );
+    }
+  }
+
+  Future _fetchUsers() async {
+    final response = await http.get(
+      Uri.parse('http://192.168.203.15:6787/users'), // Endpoint to fetch users
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        users = jsonDecode(response.body); // Store users
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching users')),
       );
     }
   }
@@ -135,6 +156,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _navigateToFeesPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FeesPage(isAdmin: widget.isAdmin, users: users)), // Pass users to FeesPage
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,6 +175,10 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.person_add),
               onPressed: _navigateToAddUserPage,
             ),
+          IconButton(
+            icon: Icon(Icons.attach_money),
+            onPressed: _navigateToFeesPage, // Always show Fees option
+          ),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: _logout,

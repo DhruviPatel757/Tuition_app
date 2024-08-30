@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class FeesPage extends StatefulWidget {
   final bool isAdmin;
+  final List users;
 
-  FeesPage({required this.isAdmin});
+  FeesPage({required this.isAdmin, required this.users});
 
   @override
   _FeesPageState createState() => _FeesPageState();
@@ -12,16 +15,58 @@ class FeesPage extends StatefulWidget {
 class _FeesPageState extends State<FeesPage> {
   final TextEditingController _amountController = TextEditingController();
   String? selectedUser;
-  final List<String> users = ['User1', 'User2', 'User3'];
+  List fees = [];
 
-  void _addFees() {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isAdmin && widget.users.isNotEmpty) {
+      selectedUser = widget.users.first['_id'];
+      _fetchFees();
+    }
+  }
+
+  Future _fetchFees() async {
+    final response = await http.get(
+      Uri.parse('http://192.168.203.15:6787/fees/$selectedUser'), // Fetch fees for the selected user
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        fees = jsonDecode(response.body);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching fees')),
+      );
+    }
+  }
+
+  void _addFees() async {
     String amount = _amountController.text.trim();
     if (selectedUser != null && amount.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fees of \$${amount} added for $selectedUser!')),
+      final response = await http.post(
+        Uri.parse('http://192.168.203.15:6787/addFees'), // Endpoint to add fees
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          'userId': selectedUser,
+          'amount': double.parse(amount),
+        }),
       );
-      _amountController.clear();
-      selectedUser = null;
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fees of \$${amount} added for user!')),
+        );
+        _amountController.clear();
+        _fetchFees(); // Refresh the fees list after adding
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding fees')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please select a user and enter an amount')),
@@ -44,15 +89,16 @@ class _FeesPageState extends State<FeesPage> {
               DropdownButtonFormField<String>(
                 value: selectedUser,
                 hint: Text('Select User'),
-                items: users.map((user) {
+                items: widget.users.map((user) {
                   return DropdownMenuItem<String>(
-                    value: user,
-                    child: Text(user),
+                    value: user['_id'], // Use user ID
+                    child: Text(user['username']),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedUser = value;
+                    _fetchFees(); // Fetch fees for the selected user
                   });
                 },
                 decoration: InputDecoration(
@@ -85,6 +131,35 @@ class _FeesPageState extends State<FeesPage> {
                 child: Text(
                   'Add Fees',
                   style: TextStyle(fontSize: 18),
+                ),
+              ),
+              SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: fees.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final fee = fees[index];
+                    return Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'Amount: \$${fee['amount'].toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
