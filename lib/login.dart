@@ -15,9 +15,11 @@ class _LoginPageState extends State<LoginPage> {
   void _login() async {
     String username = _usernameController.text;
     String password = _passwordController.text;
+    var response;
+    print('Attempting to log in with username: $username and password: $password');
 
-    final response = await http.post(
-      Uri.parse('http://192.168.249.15:5000/login'),//192.168.11.15
+      response = await http.post(
+      Uri.parse('http://192.168.203.15:6787/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -26,6 +28,9 @@ class _LoginPageState extends State<LoginPage> {
         'password': password,
       }),
     );
+
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -39,7 +44,6 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

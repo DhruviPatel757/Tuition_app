@@ -1,12 +1,11 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'login.dart';
 import 'add_user_page.dart';
 
@@ -23,7 +22,6 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _taskTitleController = TextEditingController();
   String? selectedGroup = 'All';
   final List<String> groups = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
-  File? _selectedFile;
   List tasks = [];
 
   @override
@@ -34,7 +32,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchTasks() async {
     final response = await http.get(
-      Uri.parse('http://192.168.249.15:5000/tasks?group=$selectedGroup'),
+      Uri.parse('http://192.168.203.15:6787/tasks?group=$selectedGroup'),
     );
 
     if (response.statusCode == 200) {
@@ -52,7 +50,7 @@ class _HomePageState extends State<HomePage> {
     String title = _taskTitleController.text.trim();
     if (title.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.249.15:5000/addTask'),
+        Uri.parse('http://192.168.203.15:6787/addTask'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -82,29 +80,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future _uploadFile() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedFile = File(pickedFile.path);
-      });
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
 
+    if (result != null) {
+      Uint8List? fileBytes = result.files.single.bytes;
+      String fileName = result.files.single.name;
       try {
-        final storageRef = FirebaseStorage.instance.ref().child('uploads/${DateTime.now().millisecondsSinceEpoch}_${_selectedFile!.path.split('/').last}');
-        await storageRef.putFile(_selectedFile!);
+        final storageRef = FirebaseStorage.instance.ref().child('uploads/$fileName');
+
+        await storageRef.putData(fileBytes!);
         String downloadUrl = await storageRef.getDownloadURL();
         await FirebaseFirestore.instance.collection('uploads').add({
           'fileUrl': downloadUrl,
-          'fileName': _selectedFile!.path.split('/').last,
+          'fileName': fileName,
           'uploadedAt': Timestamp.now(),
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('File uploaded successfully!')),
         );
-
-        setState(() {
-          _selectedFile = null;
-        });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to upload file: $e')),
@@ -118,16 +112,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future _downloadFile(String fileUrl) async {
-    try {
-      final fileName = fileUrl.split('/').last;
-      final directory = await getTemporaryDirectory();
-      final localPath = '${directory.path}/$fileName';
-
-      await FirebaseStorage.instance.refFromURL(fileUrl).writeToFile(File(localPath));
-      await OpenFile.open(localPath);
-    } catch (e) {
+    if (await canLaunch(fileUrl)) {
+      await launch(fileUrl);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to download file: $e')),
+        SnackBar(content: Text('Failed to download file: $fileUrl')),
       );
     }
   }
@@ -138,6 +127,7 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
+
   void _navigateToAddUserPage() {
     Navigator.push(
       context,
@@ -318,13 +308,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-              if (_selectedFile != null) ...[
-                SizedBox(height: 16),
-                Text(
-                  'Selected file: ${_selectedFile!.path.split('/').last}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
             ],
           ],
         ),
