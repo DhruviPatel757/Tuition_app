@@ -5,8 +5,9 @@ import 'dart:convert';
 class FeesPage extends StatefulWidget {
   final bool isAdmin;
   final List users;
+  final String userId; // Add userId to identify the current user
 
-  FeesPage({required this.isAdmin, required this.users});
+  FeesPage({required this.isAdmin, required this.users, required this.userId});
 
   @override
   _FeesPageState createState() => _FeesPageState();
@@ -20,25 +21,32 @@ class _FeesPageState extends State<FeesPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.isAdmin && widget.users.isNotEmpty) {
-      selectedUser = widget.users.first['_id'];
+    if (widget.isAdmin) {
+      if (widget.users.isNotEmpty) {
+        selectedUser = widget.users.first['_id'];
+      }
+      _fetchFees();
+    } else {
+      selectedUser = widget.userId; // Use the current user's ID
       _fetchFees();
     }
   }
 
   Future _fetchFees() async {
-    final response = await http.get(
-      Uri.parse('http://192.168.203.15:6787/fees/$selectedUser'), // Fetch fees for the selected user
-    );
-
-    if (response.statusCode == 200) {
-      setState(() {
-        fees = jsonDecode(response.body);
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching fees')),
+    if (selectedUser != null) {
+      final response = await http.get(
+        Uri.parse('http://192.168.203.15:6787/fees/$selectedUser'),
       );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          fees = jsonDecode(response.body);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching fees')),
+        );
+      }
     }
   }
 
@@ -46,7 +54,7 @@ class _FeesPageState extends State<FeesPage> {
     String amount = _amountController.text.trim();
     if (selectedUser != null && amount.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.203.15:6787/addFees'), // Endpoint to add fees
+        Uri.parse('http://192.168.203.15:6787/addFees'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -61,7 +69,7 @@ class _FeesPageState extends State<FeesPage> {
           SnackBar(content: Text('Fees of \$${amount} added for user!')),
         );
         _amountController.clear();
-        _fetchFees(); // Refresh the fees list after adding
+        _fetchFees();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding fees')),
@@ -91,14 +99,14 @@ class _FeesPageState extends State<FeesPage> {
                 hint: Text('Select User'),
                 items: widget.users.map((user) {
                   return DropdownMenuItem<String>(
-                    value: user['_id'], // Use user ID
+                    value: user['_id'],
                     child: Text(user['username']),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedUser = value;
-                    _fetchFees(); // Fetch fees for the selected user
+                    _fetchFees();
                   });
                 },
                 decoration: InputDecoration(
@@ -134,35 +142,35 @@ class _FeesPageState extends State<FeesPage> {
                 ),
               ),
               SizedBox(height: 16),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: fees.length,
-                  separatorBuilder: (context, index) => SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final fee = fees[index];
-                    return Container(
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'Amount: \$${fee['amount'].toStringAsFixed(2)}',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    );
-                  },
-                ),
-              ),
             ],
+            Expanded(
+              child: ListView.separated(
+                itemCount: fees.length,
+                separatorBuilder: (context, index) => SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final fee = fees[index];
+                  return Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Amount: \$${fee['amount'].toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  );
+                },
+              ),
+            ),
             if (!widget.isAdmin) ...[
               Center(
                 child: Text(

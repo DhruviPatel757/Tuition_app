@@ -56,7 +56,7 @@ app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (user && user.password === password) {
-        res.status(200).send({ message: 'Login successful!', isAdmin: (username === 'admin') });
+        res.status(200).send({ message: 'Login successful!', isAdmin: (username === 'admin'), userId: user._id });
     } else {
         res.status(401).send({ message: 'Invalid username or password' });
     }
@@ -95,6 +95,12 @@ app.post('/addFees', async (req, res) => {
 app.get('/fees/:userId', async (req, res) => {
     const { userId } = req.params;
     const fees = await Fee.find({ userId }).populate('userId', 'username');
+    res.status(200).send(fees);
+});
+
+// Get all fees for admin view (optional)
+app.get('/fees', async (req, res) => {
+    const fees = await Fee.find().populate('userId', 'username');
     res.status(200).send(fees);
 });
 

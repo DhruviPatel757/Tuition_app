@@ -12,8 +12,9 @@ import 'fees.dart'; // Import FeesPage
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
+  final String userId; // Add userId to HomePage
 
-  HomePage({required this.isAdmin});
+  HomePage({required this.isAdmin, required this.userId}); // Update constructor
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -159,7 +160,13 @@ class _HomePageState extends State<HomePage> {
   void _navigateToFeesPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => FeesPage(isAdmin: widget.isAdmin, users: users)), // Pass users to FeesPage
+      MaterialPageRoute(
+        builder: (context) => FeesPage(
+          isAdmin: widget.isAdmin,
+          users: users,
+          userId: widget.userId, // Pass userId to FeesPage
+        ),
+      ),
     );
   }
 
@@ -347,3 +354,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
