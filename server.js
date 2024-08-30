@@ -14,13 +14,11 @@ mongoose.connect('mongodb+srv://dhruvi010804:passwords@vaidyatutorials.3in64ay.m
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
 
-// User Schema
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 });
 
-// Task Schema
 const taskSchema = new mongoose.Schema({
     title: { type: String, required: true },
     assignedTo: { type: String, required: true }, 
@@ -28,7 +26,6 @@ const taskSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
 });
 
-// Fees Schema
 const feeSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true },
@@ -39,7 +36,6 @@ const User = mongoose.model('User', userSchema);
 const Task = mongoose.model('Task', taskSchema);
 const Fee = mongoose.model('Fee', feeSchema);
 
-// Add User Endpoint
 app.post('/addUser', async (req, res) => {
     const { username, password } = req.body;
     const existingUser = await User.findOne({ username });
@@ -51,7 +47,6 @@ app.post('/addUser', async (req, res) => {
     res.status(201).send({ message: 'User added successfully!' });
 });
 
-// Login Endpoint
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
@@ -62,7 +57,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Add Task Endpoint
 app.post('/addTask', async (req, res) => {
     const { title, assignedTo, group } = req.body;
     const newTask = new Task({ title, assignedTo, group });
@@ -70,20 +64,17 @@ app.post('/addTask', async (req, res) => {
     res.status(201).send({ message: 'Task added successfully!' });
 });
 
-// Get Tasks Endpoint
 app.get('/tasks', async (req, res) => {
     const { group } = req.query; 
     const tasks = group === 'All' ? await Task.find() : await Task.find({ group });
     res.status(200).send(tasks);
 });
 
-// Get Users Endpoint
 app.get('/users', async (req, res) => {
-    const users = await User.find({}, 'username _id'); // Include user ID
+    const users = await User.find({}, 'username _id'); 
     res.status(200).send(users);
 });
 
-// Add Fees Endpoint
 app.post('/addFees', async (req, res) => {
     const { userId, amount } = req.body;
     const newFee = new Fee({ userId, amount });
@@ -91,14 +82,12 @@ app.post('/addFees', async (req, res) => {
     res.status(201).send({ message: 'Fees added successfully!' });
 });
 
-// Get Fees for a User Endpoint
 app.get('/fees/:userId', async (req, res) => {
     const { userId } = req.params;
     const fees = await Fee.find({ userId }).populate('userId', 'username');
     res.status(200).send(fees);
 });
 
-// Get all fees for admin view (optional)
 app.get('/fees', async (req, res) => {
     const fees = await Fee.find().populate('userId', 'username');
     res.status(200).send(fees);

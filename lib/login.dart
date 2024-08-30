@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'home.dart'; // Import your HomePage
+import 'home.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50], // Light background color
+      backgroundColor: Colors.blueGrey[50],
       appBar: AppBar(
         title: Text('Login'),
         backgroundColor: Colors.blueAccent,

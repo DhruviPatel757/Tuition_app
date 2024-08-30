@@ -8,13 +8,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'login.dart';
 import 'add_user_page.dart';
-import 'fees.dart'; // Import FeesPage
+import 'fees.dart';
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
-  final String userId; // Add userId to HomePage
+  final String userId;
 
-  HomePage({required this.isAdmin, required this.userId}); // Update constructor
+  HomePage({required this.isAdmin, required this.userId});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -25,14 +25,14 @@ class _HomePageState extends State<HomePage> {
   String? selectedGroup = 'All';
   final List<String> groups = ['All', '5th', '6th', '7th', '8th', '9th', '10th'];
   List tasks = [];
-  List users = []; // List to store users
+  List users = [];
 
   @override
   void initState() {
     super.initState();
     _fetchTasks();
     if (widget.isAdmin) {
-      _fetchUsers(); // Fetch users if admin
+      _fetchUsers();
     }
   }
 
@@ -54,12 +54,12 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchUsers() async {
     final response = await http.get(
-      Uri.parse('http://192.168.203.15:6787/users'), // Endpoint to fetch users
+      Uri.parse('http://192.168.203.15:6787/users'),
     );
 
     if (response.statusCode == 200) {
       setState(() {
-        users = jsonDecode(response.body); // Store users
+        users = jsonDecode(response.body);
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => FeesPage(
           isAdmin: widget.isAdmin,
           users: users,
-          userId: widget.userId, // Pass userId to FeesPage
+          userId: widget.userId,
         ),
       ),
     );
@@ -184,7 +184,7 @@ class _HomePageState extends State<HomePage> {
             ),
           IconButton(
             icon: Icon(Icons.attach_money),
-            onPressed: _navigateToFeesPage, // Always show Fees option
+            onPressed: _navigateToFeesPage,
           ),
           IconButton(
             icon: Icon(Icons.logout),

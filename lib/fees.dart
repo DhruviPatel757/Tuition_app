@@ -5,7 +5,7 @@ import 'dart:convert';
 class FeesPage extends StatefulWidget {
   final bool isAdmin;
   final List users;
-  final String userId; // Add userId to identify the current user
+  final String userId;
 
   FeesPage({required this.isAdmin, required this.users, required this.userId});
 
@@ -27,7 +27,7 @@ class _FeesPageState extends State<FeesPage> {
       }
       _fetchFees();
     } else {
-      selectedUser = widget.userId; // Use the current user's ID
+      selectedUser = widget.userId;
       _fetchFees();
     }
   }
