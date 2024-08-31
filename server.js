@@ -93,17 +93,15 @@ app.get('/fees', async (req, res) => {
     res.status(200).send(fees);
 });
 
-// Endpoint to get all tasks
 app.get('/admin/tasks', async (req, res) => {
     try {
-        const tasks = await Task.find().populate('assignedTo', 'username'); // Include user details if needed
+        const tasks = await Task.find().populate('assignedTo', 'username'); 
         res.status(200).send(tasks);
     } catch (error) {
         res.status(500).send({ message: 'Error fetching tasks' });
     }
 });
 
-// Endpoint to get all users
 app.get('/admin/users', async (req, res) => {
     try {
         const users = await User.find({}, 'username _id'); 
@@ -113,7 +111,6 @@ app.get('/admin/users', async (req, res) => {
     }
 });
 
-// Endpoint to get all fees
 app.get('/admin/fees', async (req, res) => {
     try {
         const fees = await Fee.find().populate('userId', 'username');
