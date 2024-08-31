@@ -1,11 +1,12 @@
-import 'dart:typed_data';
+import 'dart:typed_data'; // for raw binary data
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'dart:convert'; // used for JSON data converting
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'admin_panel_page.dart';
 import 'login.dart';
 import 'add_user_page.dart';
 import 'fees.dart';
@@ -38,7 +39,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchTasks() async {
     final response = await http.get(
-      Uri.parse('http://192.168.203.15:6787/tasks?group=$selectedGroup'),
+      Uri.parse('http://192.168.203.15:6787/tasks?group=$selectedGroup'), // to access a resource by describing its location on the internet
     );
 
     if (response.statusCode == 200) {
@@ -105,7 +106,7 @@ class _HomePageState extends State<HomePage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
-      Uint8List? fileBytes = result.files.single.bytes;
+      Uint8List? fileBytes = result.files.single.bytes; // this will Retrieves the selected file bytes as a Uint8List which is a list of unsigned 8-bit integers (binary data).
       String fileName = result.files.single.name;
       try {
         final storageRef = FirebaseStorage.instance.ref().child('uploads/$fileName');
@@ -170,6 +171,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _navigateToAdminPanel() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AdminPanelPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,11 +185,16 @@ class _HomePageState extends State<HomePage> {
         title: Text('Home Page'),
         backgroundColor: Colors.blueAccent,
         actions: [
-          if (widget.isAdmin)
+          if (widget.isAdmin) ...[
+            IconButton(
+              icon: Icon(Icons.admin_panel_settings),
+              onPressed: _navigateToAdminPanel,
+            ),
             IconButton(
               icon: Icon(Icons.person_add),
               onPressed: _navigateToAddUserPage,
             ),
+          ],
           IconButton(
             icon: Icon(Icons.attach_money),
             onPressed: _navigateToFeesPage,
@@ -354,4 +367,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
