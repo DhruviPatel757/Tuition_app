@@ -151,6 +151,25 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future _deleteFile(String fileId, String fileUrl) async {
+    try {
+      // Delete from Firebase Storage
+      final storageRef = FirebaseStorage.instance.refFromURL(fileUrl);
+      await storageRef.delete();
+
+      // Delete from Firestore
+      await FirebaseFirestore.instance.collection('uploads').doc(fileId).delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File deleted successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete file: $e')),
+      );
+    }
+  }
+
   Future _downloadFile(String fileUrl) async {
     if (await canLaunch(fileUrl)) {
       await launch(fileUrl);
@@ -245,37 +264,46 @@ class _HomePageState extends State<HomePage> {
                         final upload = uploads[index];
                         final fileUrl = upload['fileUrl'] as String;
                         final fileName = upload['fileName'] as String;
-                        return GestureDetector(
-                          onTap: () {
-                            _downloadFile(fileUrl);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 3),
+                        final fileId = upload.id;
+
+                        return Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                spreadRadius: 2,
+                                blurRadius: 5,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  fileName,
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    fileName,
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.download, color: Colors.blue),
+                                onPressed: () {
+                                  _downloadFile(fileUrl);
+                                },
+                              ),
+                              if (widget.isAdmin)
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () {
+                                    _deleteFile(fileId, fileUrl);
+                                  },
                                 ),
-                                Icon(Icons.download, color: Colors.blue),
-                              ],
-                            ),
+                            ],
                           ),
                         );
                       },
