@@ -29,6 +29,7 @@ const taskSchema = new mongoose.Schema({
 const feeSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true },
+    paid: { type: Boolean, default: false },  // New field
     createdAt: { type: Date, default: Date.now },
 });
 
@@ -81,11 +82,42 @@ app.post('/addFees', async (req, res) => {
     await newFee.save();
     res.status(201).send({ message: 'Fees added successfully!' });
 });
+app.post('/payFees/:feeId', async (req, res) => {
+    const { feeId } = req.params;
+    try {
+        const fee = await Fee.findById(feeId);
+        if (!fee) {
+            return res.status(404).send({ message: 'Fee not found' });
+        }
+        fee.paid = true;
+        await fee.save();
+        res.status(200).send({ message: 'Fee marked as paid' });
+    } catch (error) {
+        res.status(500).send({ message: 'Error marking fee as paid' });
+    }
+});
+
+app.put('/updateFee/:feeId', async (req, res) => {
+    const { feeId } = req.params;
+    const { paid } = req.body;  // Expecting the new paid status from the client
+
+    try {
+        const fee = await Fee.findById(feeId);
+        if (!fee) {
+            return res.status(404).send({ message: 'Fee not found' });
+        }
+        fee.paid = paid;
+        await fee.save();
+        res.status(200).send({ message: 'Fee updated successfully!' });
+    } catch (error) {
+        res.status(500).send({ message: 'Error updating fee' });
+    }
+});
 
 app.get('/fees/:userId', async (req, res) => {
     const { userId } = req.params;
     const fees = await Fee.find({ userId }).populate('userId', 'username');
-    res.status(200).send(fees);
+    res.status(200).send(fees);  // The fees should now include the 'paid' status
 });
 
 app.get('/fees', async (req, res) => {
@@ -113,12 +145,39 @@ app.get('/admin/users', async (req, res) => {
 
 app.get('/admin/fees', async (req, res) => {
     try {
-        const fees = await Fee.find().populate('userId', 'username');
-        res.status(200).send(fees);
+      const fees = await Fee.find().populate('userId', 'username');
+      res.status(200).send(fees);
     } catch (error) {
-        res.status(500).send({ message: 'Error fetching fees' });
+      res.status(500).send({ message: 'Error fetching fees' });
     }
-});
+  });
+
+  app.delete('/tasks/:taskId', async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const deletedTask = await Task.findByIdAndDelete(taskId);
+      if (!deletedTask) {
+        return res.status(404).send({ message: 'Task not found' });
+      }
+      res.status(200).send({ message: 'Task deleted successfully' });
+    } catch (error) {
+      res.status(500).send({ message: 'Error deleting task' });
+    }
+  });
+
+  app.delete('/fees/:feeId', async (req, res) => {
+    try {
+      const { feeId } = req.params;
+      const deletedFee = await Fee.findByIdAndDelete(feeId);
+      if (!deletedFee) {
+        return res.status(404).send({ message: 'Fee not found' });
+      }
+      res.status(200).send({ message: 'Fee deleted successfully' });
+    } catch (error) {
+      res.status(500).send({ message: 'Error deleting fee' });
+    }
+  });
+  
 
 
 app.listen(PORT, () => {

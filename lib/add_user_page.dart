@@ -17,7 +17,7 @@ class _AddUserPageState extends State<AddUserPage> {
 
     if (username.isNotEmpty && password.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.203.15:6787/addUser'),//192.168.5.163     192.168.11.15 this was one working ip at home
+        Uri.parse('http://192.168.0.16:6787/addUser'),//192.168.5.163     192.168.11.15 this was one working ip at home
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

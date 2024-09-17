@@ -19,15 +19,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Future _fetchData() async {
-    await Future.wait([
-      _fetchTasks(),
-      _fetchUsers(),
-      _fetchFees(),
-    ]);
+    await Future.wait([_fetchTasks(), _fetchUsers(), _fetchFees()]);
   }
 
   Future _fetchTasks() async {
-    final response = await http.get(Uri.parse('http://192.168.203.15:6787/admin/tasks'));
+    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
     if (response.statusCode == 200) {
       setState(() {
         tasks = jsonDecode(response.body);
@@ -38,7 +34,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Future _fetchUsers() async {
-    final response = await http.get(Uri.parse('http://192.168.203.15:6787/admin/users'));
+    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
     if (response.statusCode == 200) {
       setState(() {
         users = jsonDecode(response.body);
@@ -49,7 +45,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Future _fetchFees() async {
-    final response = await http.get(Uri.parse('http://192.168.203.15:6787/admin/fees'));
+    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
     if (response.statusCode == 200) {
       setState(() {
         fees = jsonDecode(response.body);
@@ -61,6 +57,25 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _updateFeeStatus(String feeId, bool paid) async {
+    final response = await http.put(
+      Uri.parse('http://192.168.0.16:6787/updateFee/$feeId'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'paid': paid}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fee updated successfully!')));
+      _fetchFees(); // Refresh the fees list
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error updating fee status')));
+    }
   }
 
   @override
@@ -78,7 +93,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             SizedBox(height: 16),
             _buildSection('Users', users),
             SizedBox(height: 16),
-            _buildSection('Fees', fees),
+            _buildFeesSection('Fees', fees),
           ],
         ),
       ),
@@ -109,4 +124,59 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ],
     );
   }
+
+  Widget _buildFeesSection(String title, List data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Container(
+          height: 200,
+          child: ListView.separated(
+            scrollDirection: Axis.vertical,
+            itemCount: data.length,
+            separatorBuilder: (context, index) => Divider(),
+            itemBuilder: (context, index) {
+              final fee = data[index];
+              return _buildFeeItem(fee);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeeItem(Map fee) {
+    // Add null checks for userId and username
+    String username = fee['userId'] != null && fee['userId']['username'] != null
+        ? fee['userId']['username']
+        : 'Unknown user';
+    double amount = fee['amount']?.toDouble() ?? 0.0;
+    bool paid = fee['paid'] ?? false;
+
+    return ListTile(
+      title: Text('User: $username'),
+      subtitle: Text('Amount: \$${amount.toStringAsFixed(2)}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Checkbox(
+            value: paid,
+            onChanged: (value) {
+              _updateFeeStatus(fee['_id'], value!);
+            },
+          ),
+          Text(
+            paid ? 'Paid' : 'Unpaid',
+            style: TextStyle(
+              color: paid ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

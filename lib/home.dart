@@ -28,7 +28,6 @@ class _HomePageState extends State<HomePage> {
   List tasks = [];
   List users = [];
 
-
   @override
   void initState() {
     super.initState();
@@ -40,7 +39,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchTasks() async {
     final response = await http.get(
-      Uri.parse('http://192.168.203.15:6787/tasks?group=$selectedGroup'), // to access a resource by describing its location on the internet
+      Uri.parse('http://192.168.0.16:6787/tasks?group=$selectedGroup'),
     );
 
     if (response.statusCode == 200) {
@@ -56,7 +55,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchUsers() async {
     final response = await http.get(
-      Uri.parse('http://192.168.203.15:6787/users'),
+      Uri.parse('http://192.168.0.16:6787/users'),
     );
 
     if (response.statusCode == 200) {
@@ -74,7 +73,7 @@ class _HomePageState extends State<HomePage> {
     String title = _taskTitleController.text.trim();
     if (title.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.203.15:6787/addTask'),
+        Uri.parse('http://192.168.0.16:6787/addTask'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -103,11 +102,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future _deleteTask(String taskId) async {
+    final response = await http.delete(
+      Uri.parse('http://192.168.0.16:6787/tasks/$taskId'),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Task deleted successfully!')),
+      );
+      _fetchTasks();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting task')),
+      );
+    }
+  }
+
   Future _uploadFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
-      Uint8List? fileBytes = result.files.single.bytes; // this will Retrieves the selected file bytes as a Uint8List which is a list of unsigned 8-bit integers (binary data).
+      Uint8List? fileBytes = result.files.single.bytes;
       String fileName = result.files.single.name;
       try {
         final storageRef = FirebaseStorage.instance.ref().child('uploads/$fileName');
@@ -296,9 +312,23 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    child: Text(
-                      task['title'],
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            task['title'],
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (widget.isAdmin)
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              _deleteTask(task['_id']); // Assuming '_id' is the task identifier
+                            },
+                          ),
+                      ],
                     ),
                   );
                 },

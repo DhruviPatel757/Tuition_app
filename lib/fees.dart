@@ -35,7 +35,7 @@ class _FeesPageState extends State<FeesPage> {
   Future _fetchFees() async {
     if (selectedUser != null) {
       final response = await http.get(
-        Uri.parse('http://192.168.203.15:6787/fees/$selectedUser'),
+        Uri.parse('http://192.168.0.16:6787/fees/$selectedUser'),
       );
 
       if (response.statusCode == 200) {
@@ -54,7 +54,7 @@ class _FeesPageState extends State<FeesPage> {
     String amount = _amountController.text.trim();
     if (selectedUser != null && amount.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.203.15:6787/addFees'),
+        Uri.parse('http://192.168.0.16:6787/addFees'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -78,6 +78,40 @@ class _FeesPageState extends State<FeesPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please select a user and enter an amount')),
+      );
+    }
+  }
+
+  Future<void> _markFeeAsPaid(String feeId) async {
+    final response = await http.post(
+      Uri.parse('http://192.168.0.16:6787/payFees/$feeId'),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fee marked as paid')),
+      );
+      _fetchFees(); // Refresh the fees after marking as paid
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error marking fee as paid')),
+      );
+    }
+  }
+
+  Future<void> _deleteFee(String feeId) async {
+    final response = await http.delete(
+      Uri.parse('http://192.168.0.16:6787/fees/$feeId'),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fee deleted successfully!')),
+      );
+      _fetchFees(); // Refresh the fees after deletion
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting fee')),
       );
     }
   }
@@ -163,22 +197,45 @@ class _FeesPageState extends State<FeesPage> {
                         ),
                       ],
                     ),
-                    child: Text(
-                      'Amount: \$${fee['amount'].toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Amount: \$${fee['amount'].toStringAsFixed(2)}',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        Row(
+                          children: [
+                            if (!fee['paid']) ...[
+                              Checkbox(
+                                value: fee['paid'],
+                                onChanged: (value) {
+                                  _markFeeAsPaid(fee['_id']);
+                                },
+                              ),
+                            ] else ...[
+                              Text(
+                                'Paid',
+                                style: TextStyle(
+                                    color: Colors.green, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                            if (widget.isAdmin) ...[
+                              IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  _deleteFee(fee['_id']);
+                                },
+                              ),
+                            ]
+                          ],
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
             ),
-            if (!widget.isAdmin) ...[
-              Center(
-                child: Text(
-                  'You are not authorized to manage fees.',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ],
           ],
         ),
       ),
