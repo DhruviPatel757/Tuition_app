@@ -6,10 +6,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'admin_panel_page.dart';
+import 'admin_panel_page.dart'; // Ensure this import is correct
 import 'login.dart';
 import 'add_user_page.dart';
 import 'fees.dart';
+import 'about_page.dart';
 
 class HomePage extends StatefulWidget {
   final bool isAdmin;
@@ -212,215 +213,226 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _navigateToAboutPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AboutPage()), // Navigate to AboutPage
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home Page'),
-        backgroundColor: Colors.blueAccent,
-        actions: [
-          if (widget.isAdmin) ...[
+        appBar: AppBar(
+          title: Text('Home Page'),
+          backgroundColor: Colors.blueAccent,
+          actions: [
+            if (widget.isAdmin) ...[
+              IconButton(
+                icon: Icon(Icons.admin_panel_settings),
+                onPressed: _navigateToAdminPanel,
+              ),
+              IconButton(
+                icon: Icon(Icons.person_add),
+                onPressed: _navigateToAddUserPage,
+              ),
+            ],
             IconButton(
-              icon: Icon(Icons.admin_panel_settings),
-              onPressed: _navigateToAdminPanel,
+              icon: Icon(Icons.attach_money),
+              onPressed: _navigateToFeesPage,
             ),
             IconButton(
-              icon: Icon(Icons.person_add),
-              onPressed: _navigateToAddUserPage,
+              icon: Icon(Icons.info), // Icon for About
+              onPressed: _navigateToAboutPage,
+            ),
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: _logout,
             ),
           ],
-          IconButton(
-            icon: Icon(Icons.attach_money),
-            onPressed: _navigateToFeesPage,
-          ),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Uploaded Files',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance.collection('uploads').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final uploads = snapshot.data!.docs;
-                    return ListView.separated(
-                      itemCount: uploads.length,
-                      separatorBuilder: (context, index) => SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final upload = uploads[index];
-                        final fileUrl = upload['fileUrl'] as String;
-                        final fileName = upload['fileName'] as String;
-                        final fileId = upload.id;
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Uploaded Files',
+                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Expanded(
+                child: StreamBuilder(
+                  stream: FirebaseFirestore.instance.collection('uploads').snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      final uploads = snapshot.data!.docs;
+                        return ListView.separated(
+                          itemCount: uploads.length,
+                          separatorBuilder: (context, index) => SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final upload = uploads[index];
+                            final fileUrl = upload['fileUrl'] as String;
+                            final fileName = upload['fileName'] as String;
+                            final fileId = upload.id;
 
-                        return Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                spreadRadius: 2,
-                                blurRadius: 5,
-                                offset: Offset(0, 3),
+                            return Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  fileName,
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                    fileName,
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                  IconButton(
+                                    icon: Icon(Icons.download, color: Colors.blue),
+                                    onPressed: () {
+                                      _downloadFile(fileUrl);
+                                    },
+                                  ),
+                                  if (widget.isAdmin)
+                                    IconButton(
+                                      icon: Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        _deleteFile(fileId, fileUrl);
+                                      },
+                                    ),
+                                ],
                               ),
-                              IconButton(
-                                icon: Icon(Icons.download, color: Colors.blue),
-                                onPressed: () {
-                                  _downloadFile(fileUrl);
-                                },
-                              ),
-                              if (widget.isAdmin)
-                                IconButton(
-                                  icon: Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () {
-                                    _deleteFile(fileId, fileUrl);
-                                  },
-                                ),
-                            ],
-                          ),
+                            );
+                          },
                         );
-                      },
-                    );
-                  } else {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                },
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Tasks',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Expanded(
-              child: ListView.separated(
-                itemCount: tasks.length,
-                separatorBuilder: (context, index) => SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            task['title'],
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        if (widget.isAdmin)
-                          IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              _deleteTask(task['_id']);
-                            },
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 16),
-            DropdownButtonFormField(
-              value: selectedGroup,
-              hint: Text('Select Group'),
-              items: groups.map((group) {
-                return DropdownMenuItem(
-                  value: group,
-                  child: Text(group),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedGroup = value;
-                  _fetchTasks();
-                });
-              },
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                    } else {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                  },
                 ),
               ),
-            ),
-            if (widget.isAdmin) ...[
               SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _taskTitleController,
-                      decoration: InputDecoration(
-                        labelText: 'Enter Task Title',
-                        border: OutlineInputBorder(
+              Text(
+                'Tasks',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: tasks.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              task['title'],
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          if (widget.isAdmin)
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                _deleteTask(task['_id']);
+                              },
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 16),
+              DropdownButtonFormField(
+                value: selectedGroup,
+                hint: Text('Select Group'),
+                items: groups.map((group) {
+                  return DropdownMenuItem(
+                    value: group,
+                    child: Text(group),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedGroup = value;
+                    _fetchTasks();
+                  });
+                },
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              if (widget.isAdmin) ...[
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _taskTitleController,
+                        decoration: InputDecoration(
+                          labelText: 'Enter Task Title',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(Icons.add, size: 30),
+                      onPressed: _addTask,
+                      color: Colors.green,
+                    ),
+                    SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _uploadFile,
+                      child: Text('Upload'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  IconButton(
-                    icon: Icon(Icons.add, size: 30),
-                    onPressed: _addTask,
-                    color: Colors.green,
-                  ),
-                  SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _uploadFile,
-                    child: Text('Upload'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
     );
   }
 }

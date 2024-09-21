@@ -9,9 +9,9 @@ class AdminPanelPage extends StatefulWidget {
 }
 
 class _AdminPanelPageState extends State<AdminPanelPage> {
-  List<charts.Series<dynamic, String>> _taskSeriesPieData = [];
-  List<charts.Series<dynamic, String>> _feeSeriesPieData = [];
-  List<charts.Series<dynamic, String>> _userSeriesPieData = [];
+  List<charts.Series<dynamic, String>> _taskSeriesBarData = [];
+  List<charts.Series<dynamic, String>> _feeSeriesBarData = [];
+  List<charts.Series<dynamic, String>> _userSeriesBarData = [];
   List tasks = [];
   List users = [];
   List fees = [];
@@ -25,7 +25,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   Future<void> _fetchData() async {
     await Future.wait([_fetchTasks(), _fetchUsers(), _fetchFees()]);
     setState(() {
-      _generatePieChartData();
+      _generateBarChartData();
     });
   }
 
@@ -62,52 +62,61 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  void _generatePieChartData() {
+  void _generateBarChartData() {
     debugPrint('Tasks: $tasks');
     debugPrint('Users: $users');
     debugPrint('Fees: $fees');
+
+    // Generate bar chart data for tasks
     var taskData = [
-      {'task': 'Completed', 'count': tasks.where((task) => task['completed'] == true).length},
-      {'task': 'Pending', 'count': tasks.where((task) => task['completed'] != true).length},
+      {'category': 'Completed', 'count': tasks.where((task) => task['completed'] == true).length},
+      {'category': 'Pending', 'count': tasks.where((task) => task['completed'] != true).length},
     ];
 
     if (taskData.isNotEmpty) {
-      _taskSeriesPieData.add(
+      _taskSeriesBarData.add(
         charts.Series<dynamic, String>(
           id: 'Tasks',
-          domainFn: (datum, index) => datum['task'],
+          domainFn: (datum, index) => datum['category'],
           measureFn: (datum, index) => datum['count'],
           data: taskData,
+          colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
         ),
       );
     }
+
+    // Generate bar chart data for fees
     var feeData = [
       {'status': 'Paid', 'count': fees.where((fee) => fee['paid'] == true).length},
       {'status': 'Unpaid', 'count': fees.where((fee) => fee['paid'] != true).length},
     ];
 
     if (feeData.isNotEmpty) {
-      _feeSeriesPieData.add(
+      _feeSeriesBarData.add(
         charts.Series<dynamic, String>(
           id: 'Fees',
           domainFn: (datum, index) => datum['status'],
           measureFn: (datum, index) => datum['count'],
           data: feeData,
+          colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
         ),
       );
     }
+
+    // Generate bar chart data for users
     var userData = [
       {'role': 'Admin', 'count': users.where((user) => user['isAdmin'] == true).length},
       {'role': 'Regular', 'count': users.where((user) => user['isAdmin'] != true).length},
     ];
 
     if (userData.isNotEmpty) {
-      _userSeriesPieData.add(
+      _userSeriesBarData.add(
         charts.Series<dynamic, String>(
           id: 'Users',
           domainFn: (datum, index) => datum['role'],
           measureFn: (datum, index) => datum['count'],
           data: userData,
+          colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
         ),
       );
     }
@@ -130,18 +139,18 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            _buildPieChartSection('Tasks', _taskSeriesPieData),
+            _buildBarChartSection('Tasks', _taskSeriesBarData),
             SizedBox(height: 16),
-            _buildPieChartSection('Fees', _feeSeriesPieData),
+            _buildBarChartSection('Fees', _feeSeriesBarData),
             SizedBox(height: 16),
-            _buildPieChartSection('Users', _userSeriesPieData),
+            _buildBarChartSection('Users', _userSeriesBarData),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPieChartSection(String title, List<charts.Series<dynamic, String>> seriesData) {
+  Widget _buildBarChartSection(String title, List<charts.Series<dynamic, String>> seriesData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -150,11 +159,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         SizedBox(
           height: 300,
           child: seriesData.isNotEmpty
-              ? charts.PieChart<String>(
+              ? charts.BarChart(
             seriesData,
             animate: true,
+            barGroupingType: charts.BarGroupingType.grouped,
             behaviors: [
-              charts.DatumLegend(
+              charts.SeriesLegend(
                 position: charts.BehaviorPosition.end,
                 horizontalFirst: false,
                 desiredMaxRows: 2,
@@ -165,10 +175,6 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 ),
               ),
             ],
-            defaultRenderer: charts.ArcRendererConfig<String>(
-              arcWidth: 100,
-              strokeWidthPx: 0,
-            ),
           )
               : Center(child: Text("No Data Available")),
         ),
