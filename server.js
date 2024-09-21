@@ -29,7 +29,7 @@ const taskSchema = new mongoose.Schema({
 const feeSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     amount: { type: Number, required: true },
-    paid: { type: Boolean, default: false },  // New field
+    paid: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
 });
 
@@ -99,7 +99,7 @@ app.post('/payFees/:feeId', async (req, res) => {
 
 app.put('/updateFee/:feeId', async (req, res) => {
     const { feeId } = req.params;
-    const { paid } = req.body;  // Expecting the new paid status from the client
+    const { paid } = req.body;
 
     try {
         const fee = await Fee.findById(feeId);
@@ -117,7 +117,7 @@ app.put('/updateFee/:feeId', async (req, res) => {
 app.get('/fees/:userId', async (req, res) => {
     const { userId } = req.params;
     const fees = await Fee.find({ userId }).populate('userId', 'username');
-    res.status(200).send(fees);  // The fees should now include the 'paid' status
+    res.status(200).send(fees);
 });
 
 app.get('/fees', async (req, res) => {

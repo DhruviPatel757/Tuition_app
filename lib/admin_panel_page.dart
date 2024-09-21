@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:charts_flutter/flutter.dart' as charts;
 
 class AdminPanelPage extends StatefulWidget {
   @override
@@ -8,6 +9,9 @@ class AdminPanelPage extends StatefulWidget {
 }
 
 class _AdminPanelPageState extends State<AdminPanelPage> {
+  List<charts.Series<dynamic, String>> _taskSeriesPieData = [];
+  List<charts.Series<dynamic, String>> _feeSeriesPieData = [];
+  List<charts.Series<dynamic, String>> _userSeriesPieData = [];
   List tasks = [];
   List users = [];
   List fees = [];
@@ -18,11 +22,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     _fetchData();
   }
 
-  Future _fetchData() async {
+  Future<void> _fetchData() async {
     await Future.wait([_fetchTasks(), _fetchUsers(), _fetchFees()]);
+    setState(() {
+      _generatePieChartData();
+    });
   }
 
-  Future _fetchTasks() async {
+  Future<void> _fetchTasks() async {
     final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
     if (response.statusCode == 200) {
       setState(() {
@@ -33,7 +40,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  Future _fetchUsers() async {
+  Future<void> _fetchUsers() async {
     final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
     if (response.statusCode == 200) {
       setState(() {
@@ -44,7 +51,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  Future _fetchFees() async {
+  Future<void> _fetchFees() async {
     final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
     if (response.statusCode == 200) {
       setState(() {
@@ -55,27 +62,61 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _generatePieChartData() {
+    debugPrint('Tasks: $tasks');
+    debugPrint('Users: $users');
+    debugPrint('Fees: $fees');
+    var taskData = [
+      {'task': 'Completed', 'count': tasks.where((task) => task['completed'] == true).length},
+      {'task': 'Pending', 'count': tasks.where((task) => task['completed'] != true).length},
+    ];
+
+    if (taskData.isNotEmpty) {
+      _taskSeriesPieData.add(
+        charts.Series<dynamic, String>(
+          id: 'Tasks',
+          domainFn: (datum, index) => datum['task'],
+          measureFn: (datum, index) => datum['count'],
+          data: taskData,
+        ),
+      );
+    }
+    var feeData = [
+      {'status': 'Paid', 'count': fees.where((fee) => fee['paid'] == true).length},
+      {'status': 'Unpaid', 'count': fees.where((fee) => fee['paid'] != true).length},
+    ];
+
+    if (feeData.isNotEmpty) {
+      _feeSeriesPieData.add(
+        charts.Series<dynamic, String>(
+          id: 'Fees',
+          domainFn: (datum, index) => datum['status'],
+          measureFn: (datum, index) => datum['count'],
+          data: feeData,
+        ),
+      );
+    }
+    var userData = [
+      {'role': 'Admin', 'count': users.where((user) => user['isAdmin'] == true).length},
+      {'role': 'Regular', 'count': users.where((user) => user['isAdmin'] != true).length},
+    ];
+
+    if (userData.isNotEmpty) {
+      _userSeriesPieData.add(
+        charts.Series<dynamic, String>(
+          id: 'Users',
+          domainFn: (datum, index) => datum['role'],
+          measureFn: (datum, index) => datum['count'],
+          data: userData,
+        ),
+      );
+    }
+
+    setState(() {});
   }
 
-  Future<void> _updateFeeStatus(String feeId, bool paid) async {
-    final response = await http.put(
-      Uri.parse('http://192.168.0.16:6787/updateFee/$feeId'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'paid': paid}),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fee updated successfully!')));
-      _fetchFees(); // Refresh the fees list
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error updating fee status')));
-    }
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -89,94 +130,49 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            _buildSection('Tasks', tasks),
+            _buildPieChartSection('Tasks', _taskSeriesPieData),
             SizedBox(height: 16),
-            _buildSection('Users', users),
+            _buildPieChartSection('Fees', _feeSeriesPieData),
             SizedBox(height: 16),
-            _buildFeesSection('Fees', fees),
+            _buildPieChartSection('Users', _userSeriesPieData),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSection(String title, List data) {
+  Widget _buildPieChartSection(String title, List<charts.Series<dynamic, String>> seriesData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        Container(
-          height: 200,
-          child: ListView.separated(
-            scrollDirection: Axis.vertical,
-            itemCount: data.length,
-            separatorBuilder: (context, index) => Divider(),
-            itemBuilder: (context, index) {
-              final item = data[index];
-              return ListTile(
-                title: Text(item is Map ? item['title'] ?? item['username'] ?? 'No title' : 'No data'),
-                subtitle: item is Map ? Text(item['assignedTo'] ?? '') : null,
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeesSection(String title, List data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
-        Container(
-          height: 200,
-          child: ListView.separated(
-            scrollDirection: Axis.vertical,
-            itemCount: data.length,
-            separatorBuilder: (context, index) => Divider(),
-            itemBuilder: (context, index) {
-              final fee = data[index];
-              return _buildFeeItem(fee);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeeItem(Map fee) {
-    // Add null checks for userId and username
-    String username = fee['userId'] != null && fee['userId']['username'] != null
-        ? fee['userId']['username']
-        : 'Unknown user';
-    double amount = fee['amount']?.toDouble() ?? 0.0;
-    bool paid = fee['paid'] ?? false;
-
-    return ListTile(
-      title: Text('User: $username'),
-      subtitle: Text('Amount: \$${amount.toStringAsFixed(2)}'),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Checkbox(
-            value: paid,
-            onChanged: (value) {
-              _updateFeeStatus(fee['_id'], value!);
-            },
-          ),
-          Text(
-            paid ? 'Paid' : 'Unpaid',
-            style: TextStyle(
-              color: paid ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
+        SizedBox(
+          height: 300,
+          child: seriesData.isNotEmpty
+              ? charts.PieChart<String>(
+            seriesData,
+            animate: true,
+            behaviors: [
+              charts.DatumLegend(
+                position: charts.BehaviorPosition.end,
+                horizontalFirst: false,
+                desiredMaxRows: 2,
+                cellPadding: EdgeInsets.only(right: 4.0, bottom: 4.0),
+                entryTextStyle: charts.TextStyleSpec(
+                  color: charts.MaterialPalette.black,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+            defaultRenderer: charts.ArcRendererConfig<String>(
+              arcWidth: 100,
+              strokeWidthPx: 0,
             ),
-          ),
-        ],
-      ),
+          )
+              : Center(child: Text("No Data Available")),
+        ),
+      ],
     );
   }
 }
-

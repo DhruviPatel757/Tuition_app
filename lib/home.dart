@@ -153,11 +153,9 @@ class _HomePageState extends State<HomePage> {
 
   Future _deleteFile(String fileId, String fileUrl) async {
     try {
-      // Delete from Firebase Storage
       final storageRef = FirebaseStorage.instance.refFromURL(fileUrl);
       await storageRef.delete();
 
-      // Delete from Firestore
       await FirebaseFirestore.instance.collection('uploads').doc(fileId).delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,7 +351,7 @@ class _HomePageState extends State<HomePage> {
                           IconButton(
                             icon: Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
-                              _deleteTask(task['_id']); // Assuming '_id' is the task identifier
+                              _deleteTask(task['_id']);
                             },
                           ),
                       ],
