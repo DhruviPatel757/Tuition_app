@@ -114,6 +114,19 @@ app.put('/updateFee/:feeId', async (req, res) => {
     }
 });
 
+app.delete('/users/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const deletedUser = await User.findByIdAndDelete(userId);
+        if (!deletedUser) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+        res.status(200).send({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).send({ message: 'Error deleting user' });
+    }
+});
+
 app.get('/fees/:userId', async (req, res) => {
     const { userId } = req.params;
     const fees = await Fee.find({ userId }).populate('userId', 'username');

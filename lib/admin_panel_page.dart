@@ -12,9 +12,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   List<Map<String, dynamic>> tasks = [];
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> fees = [];
-  List<charts.Series<dynamic, String>> _taskSeriesBarData = [];
-  List<charts.Series<dynamic, String>> _feeSeriesBarData = [];
-  List<charts.Series<dynamic, String>> _userSeriesBarData = [];
+  List<charts.Series<dynamic, int>> _taskSeriesLineData = [];
+  List<charts.Series<dynamic, int>> _feeSeriesLineData = [];
+  List<charts.Series<dynamic, int>> _userSeriesLineData = [];
   bool _isDataLoaded = false;
 
   @override
@@ -37,7 +37,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           users = List<Map<String, dynamic>>.from(jsonDecode(userResponse.body));
           fees = List<Map<String, dynamic>>.from(jsonDecode(feeResponse.body));
           _isDataLoaded = true;
-          _generateBarChartData();
+          _generateLineChartData();
         });
       } else {
         _showError('Error fetching data');
@@ -47,54 +47,50 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
   }
 
-  void _generateBarChartData() {
-    // Clear previous data
-    _taskSeriesBarData.clear();
-    _feeSeriesBarData.clear();
-    _userSeriesBarData.clear();
+  void _generateLineChartData() {
+    _taskSeriesLineData.clear();
+    _feeSeriesLineData.clear();
+    _userSeriesLineData.clear();
 
-    // Generate bar chart data for tasks
     var taskData = [
-      {'category': 'Completed', 'count': tasks.where((task) => task['completed'] == true).length},
-      {'category': 'Pending', 'count': tasks.where((task) => task['completed'] != true).length},
+      {'category': 0, 'count': tasks.where((task) => task['completed'] == true).length},
+      {'category': 1, 'count': tasks.where((task) => task['completed'] != true).length},
     ];
 
-    _taskSeriesBarData.add(
-      charts.Series<dynamic, String>(
+    _taskSeriesLineData.add(
+      charts.Series<dynamic, int>(
         id: 'Tasks',
-        domainFn: (datum, index) => datum['category'] as String,
+        domainFn: (datum, index) => datum['category'] as int,
         measureFn: (datum, index) => datum['count'] as int,
         data: taskData,
         colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
       ),
     );
 
-    // Generate bar chart data for fees
     var feeData = [
-      {'status': 'Paid', 'count': fees.where((fee) => fee['paid'] == true).length},
-      {'status': 'Unpaid', 'count': fees.where((fee) => fee['paid'] != true).length},
+      {'status': 0, 'count': fees.where((fee) => fee['paid'] == true).length},
+      {'status': 1, 'count': fees.where((fee) => fee['paid'] != true).length},
     ];
 
-    _feeSeriesBarData.add(
-      charts.Series<dynamic, String>(
+    _feeSeriesLineData.add(
+      charts.Series<dynamic, int>(
         id: 'Fees',
-        domainFn: (datum, index) => datum['status'] as String,
+        domainFn: (datum, index) => datum['status'] as int,
         measureFn: (datum, index) => datum['count'] as int,
         data: feeData,
         colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
       ),
     );
 
-    // Generate bar chart data for users
     var userData = [
-      {'role': 'Admin', 'count': users.where((user) => user['isAdmin'] == true).length},
-      {'role': 'Regular', 'count': users.where((user) => user['isAdmin'] != true).length},
+      {'role': 0, 'count': users.where((user) => user['isAdmin'] == true).length},
+      {'role': 1, 'count': users.where((user) => user['isAdmin'] != true).length},
     ];
 
-    _userSeriesBarData.add(
-      charts.Series<dynamic, String>(
+    _userSeriesLineData.add(
+      charts.Series<dynamic, int>(
         id: 'Users',
-        domainFn: (datum, index) => datum['role'] as String,
+        domainFn: (datum, index) => datum['role'] as int,
         measureFn: (datum, index) => datum['count'] as int,
         data: userData,
         colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
@@ -144,11 +140,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               ],
             ),
             SizedBox(height: 16),
-            _buildBarChartSection('Tasks', _taskSeriesBarData),
+            _buildLineChartSection('Tasks', _taskSeriesLineData),
             SizedBox(height: 16),
-            _buildBarChartSection('Fees', _feeSeriesBarData),
+            _buildLineChartSection('Fees', _feeSeriesLineData),
             SizedBox(height: 16),
-            _buildBarChartSection('Users', _userSeriesBarData),
+            _buildLineChartSection('Users', _userSeriesLineData),
           ],
         )
             : Center(child: CircularProgressIndicator()),
@@ -173,7 +169,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
-  Widget _buildBarChartSection(String title, List<charts.Series<dynamic, String>> seriesData) {
+  Widget _buildLineChartSection(String title, List<charts.Series<dynamic, int>> seriesData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -182,10 +178,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         SizedBox(
           height: 300,
           child: seriesData.isNotEmpty
-              ? charts.BarChart(
+              ? charts.LineChart(
             seriesData,
             animate: true,
-            barGroupingType: charts.BarGroupingType.grouped,
             behaviors: [
               charts.SeriesLegend(
                 position: charts.BehaviorPosition.end,
@@ -198,6 +193,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 ),
               ),
             ],
+            defaultRenderer: charts.LineRendererConfig(
+              includePoints: true,
+              radiusPx: 4.0,
+            ),
           )
               : Center(child: Text("No Data Available")),
         ),

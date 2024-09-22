@@ -6,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'admin_panel_page.dart'; // Ensure this import is correct
+import 'admin_panel_page.dart';
 import 'login.dart';
 import 'add_user_page.dart';
 import 'fees.dart';
@@ -216,7 +216,7 @@ class _HomePageState extends State<HomePage> {
   void _navigateToAboutPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AboutPage()), // Navigate to AboutPage
+      MaterialPageRoute(builder: (context) => AboutPage()),
     );
   }
 
@@ -237,7 +237,7 @@ class _HomePageState extends State<HomePage> {
                 onPressed: _navigateToAddUserPage,
               ),
               IconButton(
-                icon: Icon(Icons.info), // Icon for About
+                icon: Icon(Icons.info),
                 onPressed: _navigateToAboutPage,
               ),
             ],

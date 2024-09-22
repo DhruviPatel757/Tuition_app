@@ -91,7 +91,7 @@ class _FeesPageState extends State<FeesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fee marked as paid')),
       );
-      _fetchFees(); // Refresh the fees after marking as paid
+      _fetchFees();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error marking fee as paid')),
@@ -108,7 +108,7 @@ class _FeesPageState extends State<FeesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fee deleted successfully!')),
       );
-      _fetchFees(); // Refresh the fees after deletion
+      _fetchFees();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting fee')),

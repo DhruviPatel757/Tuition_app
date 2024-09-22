@@ -78,6 +78,23 @@ class _AboutPageState extends State<AboutPage> {
     }
   }
 
+  Future<void> _deleteUser(String userId) async {
+    final response = await http.delete(
+      Uri.parse('http://192.168.0.16:6787/users/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User deleted successfully!')),
+      );
+      _fetchUsers(); // Refresh the users list
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting user')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,6 +134,12 @@ class _AboutPageState extends State<AboutPage> {
               return ListTile(
                 title: Text(item is Map ? item['title'] ?? item['username'] ?? 'No title' : 'No data'),
                 subtitle: item is Map ? Text(item['assignedTo'] ?? '') : null,
+                trailing: item is Map && item.containsKey('username')
+                    ? IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteUser(item['_id']), // Delete user
+                )
+                    : null,
               );
             },
           ),
@@ -148,7 +171,6 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Widget _buildFeeItem(Map fee) {
-    // Add null checks for userId and username
     String username = fee['userId'] != null && fee['userId']['username'] != null
         ? fee['userId']['username']
         : 'Unknown user';
