@@ -9,12 +9,13 @@ class AdminPanelPage extends StatefulWidget {
 }
 
 class _AdminPanelPageState extends State<AdminPanelPage> {
+  List<Map<String, dynamic>> tasks = [];
+  List<Map<String, dynamic>> users = [];
+  List<Map<String, dynamic>> fees = [];
   List<charts.Series<dynamic, String>> _taskSeriesBarData = [];
   List<charts.Series<dynamic, String>> _feeSeriesBarData = [];
   List<charts.Series<dynamic, String>> _userSeriesBarData = [];
-  List tasks = [];
-  List users = [];
-  List fees = [];
+  bool _isDataLoaded = false;
 
   @override
   void initState() {
@@ -23,49 +24,34 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Future<void> _fetchData() async {
-    await Future.wait([_fetchTasks(), _fetchUsers(), _fetchFees()]);
-    setState(() {
-      _generateBarChartData();
-    });
-  }
+    try {
+      final taskResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
+      final userResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
+      final feeResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
 
-  Future<void> _fetchTasks() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
-    if (response.statusCode == 200) {
-      setState(() {
-        tasks = jsonDecode(response.body);
-      });
-    } else {
-      _showError('Error fetching tasks');
-    }
-  }
-
-  Future<void> _fetchUsers() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
-    if (response.statusCode == 200) {
-      setState(() {
-        users = jsonDecode(response.body);
-      });
-    } else {
-      _showError('Error fetching users');
-    }
-  }
-
-  Future<void> _fetchFees() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
-    if (response.statusCode == 200) {
-      setState(() {
-        fees = jsonDecode(response.body);
-      });
-    } else {
-      _showError('Error fetching fees');
+      if (taskResponse.statusCode == 200 &&
+          userResponse.statusCode == 200 &&
+          feeResponse.statusCode == 200) {
+        setState(() {
+          tasks = List<Map<String, dynamic>>.from(jsonDecode(taskResponse.body));
+          users = List<Map<String, dynamic>>.from(jsonDecode(userResponse.body));
+          fees = List<Map<String, dynamic>>.from(jsonDecode(feeResponse.body));
+          _isDataLoaded = true;
+          _generateBarChartData();
+        });
+      } else {
+        _showError('Error fetching data');
+      }
+    } catch (e) {
+      _showError('An error occurred: $e');
     }
   }
 
   void _generateBarChartData() {
-    debugPrint('Tasks: $tasks');
-    debugPrint('Users: $users');
-    debugPrint('Fees: $fees');
+    // Clear previous data
+    _taskSeriesBarData.clear();
+    _feeSeriesBarData.clear();
+    _userSeriesBarData.clear();
 
     // Generate bar chart data for tasks
     var taskData = [
@@ -73,17 +59,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       {'category': 'Pending', 'count': tasks.where((task) => task['completed'] != true).length},
     ];
 
-    if (taskData.isNotEmpty) {
-      _taskSeriesBarData.add(
-        charts.Series<dynamic, String>(
-          id: 'Tasks',
-          domainFn: (datum, index) => datum['category'],
-          measureFn: (datum, index) => datum['count'],
-          data: taskData,
-          colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-        ),
-      );
-    }
+    _taskSeriesBarData.add(
+      charts.Series<dynamic, String>(
+        id: 'Tasks',
+        domainFn: (datum, index) => datum['category'] as String,
+        measureFn: (datum, index) => datum['count'] as int,
+        data: taskData,
+        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+      ),
+    );
 
     // Generate bar chart data for fees
     var feeData = [
@@ -91,17 +75,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       {'status': 'Unpaid', 'count': fees.where((fee) => fee['paid'] != true).length},
     ];
 
-    if (feeData.isNotEmpty) {
-      _feeSeriesBarData.add(
-        charts.Series<dynamic, String>(
-          id: 'Fees',
-          domainFn: (datum, index) => datum['status'],
-          measureFn: (datum, index) => datum['count'],
-          data: feeData,
-          colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
-        ),
-      );
-    }
+    _feeSeriesBarData.add(
+      charts.Series<dynamic, String>(
+        id: 'Fees',
+        domainFn: (datum, index) => datum['status'] as String,
+        measureFn: (datum, index) => datum['count'] as int,
+        data: feeData,
+        colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
+      ),
+    );
 
     // Generate bar chart data for users
     var userData = [
@@ -109,19 +91,15 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       {'role': 'Regular', 'count': users.where((user) => user['isAdmin'] != true).length},
     ];
 
-    if (userData.isNotEmpty) {
-      _userSeriesBarData.add(
-        charts.Series<dynamic, String>(
-          id: 'Users',
-          domainFn: (datum, index) => datum['role'],
-          measureFn: (datum, index) => datum['count'],
-          data: userData,
-          colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
-        ),
-      );
-    }
-
-    setState(() {});
+    _userSeriesBarData.add(
+      charts.Series<dynamic, String>(
+        id: 'Users',
+        domainFn: (datum, index) => datum['role'] as String,
+        measureFn: (datum, index) => datum['count'] as int,
+        data: userData,
+        colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -130,6 +108,11 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   @override
   Widget build(BuildContext context) {
+    final totalTasks = tasks.length.toString();
+    final totalFees = fees.length.toString();
+    final paidFees = fees.where((fee) => fee['paid'] == true).length.toString();
+    final unpaidFees = fees.where((fee) => fee['paid'] == false).length.toString();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Admin Panel'),
@@ -137,13 +120,53 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView(
+        child: _isDataLoaded
+            ? ListView(
           children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard('Total Tasks', totalTasks, Colors.blue),
+                ),
+                Expanded(
+                  child: _buildStatCard('Total Fees', totalFees, Colors.orange),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard('Paid Fees', paidFees, Colors.green),
+                ),
+                Expanded(
+                  child: _buildStatCard('Unpaid Fees', unpaidFees, Colors.red),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
             _buildBarChartSection('Tasks', _taskSeriesBarData),
             SizedBox(height: 16),
             _buildBarChartSection('Fees', _feeSeriesBarData),
             SizedBox(height: 16),
             _buildBarChartSection('Users', _userSeriesBarData),
+          ],
+        )
+            : Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Card(
+      color: color,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(color: Colors.white, fontSize: 24)),
+            SizedBox(height: 10),
+            Text(value, style: TextStyle(color: Colors.white, fontSize: 36)),
           ],
         ),
       ),
@@ -181,4 +204,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ],
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: AdminPanelPage(),
+  ));
 }

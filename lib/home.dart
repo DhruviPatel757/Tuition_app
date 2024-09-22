@@ -236,14 +236,14 @@ class _HomePageState extends State<HomePage> {
                 icon: Icon(Icons.person_add),
                 onPressed: _navigateToAddUserPage,
               ),
+              IconButton(
+                icon: Icon(Icons.info), // Icon for About
+                onPressed: _navigateToAboutPage,
+              ),
             ],
             IconButton(
               icon: Icon(Icons.attach_money),
               onPressed: _navigateToFeesPage,
-            ),
-            IconButton(
-              icon: Icon(Icons.info), // Icon for About
-              onPressed: _navigateToAboutPage,
             ),
             IconButton(
               icon: Icon(Icons.logout),

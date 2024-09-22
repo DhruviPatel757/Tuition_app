@@ -82,7 +82,7 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Panel'),
+        title: Text('About'),
         backgroundColor: Colors.blueAccent,
       ),
       body: Padding(
