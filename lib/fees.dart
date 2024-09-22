@@ -206,14 +206,16 @@ class _FeesPageState extends State<FeesPage> {
                         ),
                         Row(
                           children: [
-                            if (!fee['paid']) ...[
+                            if (widget.isAdmin && !fee['paid']) ...[
+                              // Checkbox is shown only for admin
                               Checkbox(
                                 value: fee['paid'],
                                 onChanged: (value) {
                                   _markFeeAsPaid(fee['_id']);
                                 },
                               ),
-                            ] else ...[
+                            ],
+                            if (fee['paid']) ...[
                               Text(
                                 'Paid',
                                 style: TextStyle(
