@@ -23,7 +23,7 @@ class _AddUserPageState extends State<AddUserPage> {
       String password = _passwordController.text.trim();
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.16:6787/addUser'),
+        Uri.parse('http://192.168.107.15:6787/addUser'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

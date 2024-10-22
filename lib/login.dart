@@ -18,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isNotEmpty && password.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.0.16:6787/login'),
+        Uri.parse('http://192.168.107.15:6787/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

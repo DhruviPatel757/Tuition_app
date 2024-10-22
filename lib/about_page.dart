@@ -23,7 +23,7 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Future _fetchTasks() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
+    final response = await http.get(Uri.parse('http://192.168.107.15:6787/admin/tasks'));
     if (response.statusCode == 200) {
       setState(() {
         tasks = jsonDecode(response.body);
@@ -34,7 +34,7 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Future _fetchUsers() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
+    final response = await http.get(Uri.parse('http://192.168.107.15:6787/admin/users'));
     if (response.statusCode == 200) {
       setState(() {
         users = jsonDecode(response.body);
@@ -45,7 +45,7 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Future _fetchFees() async {
-    final response = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
+    final response = await http.get(Uri.parse('http://192.168.107.15:6787/admin/fees'));
     if (response.statusCode == 200) {
       setState(() {
         fees = jsonDecode(response.body);
@@ -61,7 +61,7 @@ class _AboutPageState extends State<AboutPage> {
 
   Future<void> _updateFeeStatus(String feeId, bool paid) async {
     final response = await http.put(
-      Uri.parse('http://192.168.0.16:6787/updateFee/$feeId'),
+      Uri.parse('http://192.168.107.15:6787/updateFee/$feeId'),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -71,7 +71,7 @@ class _AboutPageState extends State<AboutPage> {
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Fee updated successfully!')));
-      _fetchFees(); // Refresh the fees list
+      _fetchFees();
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error updating fee status')));
@@ -80,14 +80,14 @@ class _AboutPageState extends State<AboutPage> {
 
   Future<void> _deleteUser(String userId) async {
     final response = await http.delete(
-      Uri.parse('http://192.168.0.16:6787/users/$userId'),
+      Uri.parse('http://192.168.107.15:6787/users/$userId'),
     );
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('User deleted successfully!')),
       );
-      _fetchUsers(); // Refresh the users list
+      _fetchUsers();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting user')),
@@ -137,7 +137,7 @@ class _AboutPageState extends State<AboutPage> {
                 trailing: item is Map && item.containsKey('username')
                     ? IconButton(
                   icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteUser(item['_id']), // Delete user
+                  onPressed: () => _deleteUser(item['_id']),
                 )
                     : null,
               );

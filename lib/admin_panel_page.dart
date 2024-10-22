@@ -25,9 +25,9 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
   Future<void> _fetchData() async {
     try {
-      final taskResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/tasks'));
-      final userResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/users'));
-      final feeResponse = await http.get(Uri.parse('http://192.168.0.16:6787/admin/fees'));
+      final taskResponse = await http.get(Uri.parse('http://192.168.107.15:6787/admin/tasks'));
+      final userResponse = await http.get(Uri.parse('http://192.168.107.15:6787/admin/users'));
+      final feeResponse = await http.get(Uri.parse('http://192.168.107.15:6787/admin/fees'));
 
       if (taskResponse.statusCode == 200 &&
           userResponse.statusCode == 200 &&

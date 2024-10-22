@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchTasks() async {
     final response = await http.get(
-      Uri.parse('http://192.168.0.16:6787/tasks?group=$selectedGroup'),
+      Uri.parse('http://192.168.107.15:6787/tasks?group=$selectedGroup'),
     );
 
     if (response.statusCode == 200) {
@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _fetchUsers() async {
     final response = await http.get(
-      Uri.parse('http://192.168.0.16:6787/users'),
+      Uri.parse('http://192.168.107.15:6787/users'),
     );
 
     if (response.statusCode == 200) {
@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     String title = _taskTitleController.text.trim();
     if (title.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.0.16:6787/addTask'),
+        Uri.parse('http://192.168.107.15:6787/addTask'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -105,7 +105,7 @@ class _HomePageState extends State<HomePage> {
 
   Future _deleteTask(String taskId) async {
     final response = await http.delete(
-      Uri.parse('http://192.168.0.16:6787/tasks/$taskId'),
+      Uri.parse('http://192.168.107.15:6787/tasks/$taskId'),
     );
 
     if (response.statusCode == 200) {

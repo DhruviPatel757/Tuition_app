@@ -35,7 +35,7 @@ class _FeesPageState extends State<FeesPage> {
   Future _fetchFees() async {
     if (selectedUser != null) {
       final response = await http.get(
-        Uri.parse('http://192.168.0.16:6787/fees/$selectedUser'),
+        Uri.parse('http://192.168.107.15:6787/fees/$selectedUser'),
       );
 
       if (response.statusCode == 200) {
@@ -54,7 +54,7 @@ class _FeesPageState extends State<FeesPage> {
     String amount = _amountController.text.trim();
     if (selectedUser != null && amount.isNotEmpty) {
       final response = await http.post(
-        Uri.parse('http://192.168.0.16:6787/addFees'),
+        Uri.parse('http://192.168.107.15:6787/addFees'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -84,7 +84,7 @@ class _FeesPageState extends State<FeesPage> {
 
   Future<void> _markFeeAsPaid(String feeId) async {
     final response = await http.post(
-      Uri.parse('http://192.168.0.16:6787/payFees/$feeId'),
+      Uri.parse('http://192.168.107.15:6787/payFees/$feeId'),
     );
 
     if (response.statusCode == 200) {
@@ -101,7 +101,7 @@ class _FeesPageState extends State<FeesPage> {
 
   Future<void> _deleteFee(String feeId) async {
     final response = await http.delete(
-      Uri.parse('http://192.168.0.16:6787/fees/$feeId'),
+      Uri.parse('http://192.168.107.15:6787/fees/$feeId'),
     );
 
     if (response.statusCode == 200) {
@@ -207,7 +207,6 @@ class _FeesPageState extends State<FeesPage> {
                         Row(
                           children: [
                             if (widget.isAdmin && !fee['paid']) ...[
-                              // Checkbox is shown only for admin
                               Checkbox(
                                 value: fee['paid'],
                                 onChanged: (value) {
